@@ -307,8 +307,12 @@ inline static void
 delete_key(RankData_t *rank, int index) {
     if (index < 0 || index >= rank->item_capacity)
         return;
-    for (int i = index + 1; i < rank->item_count; i++)
-        rank->key_binary_array[i - 1] = rank->key_binary_array[i];
+    lua_Integer *ptr = rank->key_binary_array;
+    // memmove has a better performance than move manually one by one in a loop
+    // for (int i = index + 1; i < rank->item_count; i++) ptr[i - 1] = ptr[i];
+    size_t n = rank->item_count-1 - index;
+    if (n > 0)
+        memmove(&ptr[index], &ptr[index+1], n*sizeof(lua_Integer));
     rank->item_count--;
 }
 
@@ -316,8 +320,12 @@ inline static void
 insert_key(RankData_t *rank, int index, lua_Integer key) {
     if (index < 0 || index >= rank->item_capacity)
         return;
-    for (int i = rank->item_count - 1; i >= index; i--)
-        rank->key_binary_array[i + 1] = rank->key_binary_array[i];
+    lua_Integer *ptr = rank->key_binary_array;
+    // memmove has a bettle performance
+    // for (int i = rank->item_count - 1; i >= index; i--) ptr[i + 1] = ptr[i];
+    size_t n = rank->item_count-1 - index + 1;
+    if (n > 0)
+        memmove(&ptr[index+1], &ptr[index], n*sizeof(lua_Integer));
     rank->key_binary_array[index] = key;
     rank->item_count++;
 }
